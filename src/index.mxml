@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   
+			   xmlns:com.fourdtext="com.fourdtext.*"
+			   
+			   applicationComplete="initApplication()" 
+			   preinitialize="onPreinitialize()"
+			   minWidth="955" minHeight="600"
+			   backgroundColor="0x000000"
+			   name="The Integral Eye" pageTitle="The Integral Eye"
+			   >
+	
+	<fx:Style source="TheIntegralEye.css"/> 
+	
+	<fx:Script>
+		<![CDATA[
+			import com.fourdtext.*;
+			import com.fourdtext.FeedLabel;
+			import com.fourdtext.MRSSFeed;
+			import com.fourdtext.skins.SxScroller;
+			import com.fourdtext.utility;
+			
+			import flashx.textLayout.formats.WhiteSpaceCollapse;
+			
+			import mx.controls.Text;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.Image;
+			import spark.components.RichEditableText;
+			import spark.utils.TextFlowUtil;
+			
+			private var cN:String = "TheIntegralEye";
+			
+			private var labelArray:Vector.<FeedLabel>;
+			private var feedArray:Vector.<MRSSFeed>;
+			
+			private var enabledColor:int = 0xa0a0a0;
+			private var disabledColor:int = 0x800000;
+			
+			private var enableTrace:Boolean = false;
+			
+			private var inText:Boolean; // we are showing one of the texts, not images
+			private var inOfferings:Boolean;
+			private var state:String; //  bio, eye, offerings, image
+			
+			private var eyeScroller:SxScroller;
+			private var bioScroller:SxScroller;
+			private var offeringsScroller:SxScroller;
+			
+			private var widthMain:int;
+			private var heightMain:int;
+			
+			private var feedSelected:MRSSFeed;
+			private var itemSelected:MRSSItem;			
+			
+			private var enableSlideShow:Boolean;
+			
+			private var image:spark.components.Image;
+			private var imageNew:spark.components.Image;
+			
+			private var timeoutMS:int = 10000;		
+			private var initialDelayMS:int = 30000;
+			
+			private var slideShow:SxSlideShow;
+			
+			private function onPreinitialize():void 
+			{
+				var mN:String = cN + ".onPreinitialize ";
+				if (enableTrace) trace(mN);
+				if (enableTrace) initialDelayMS = 5000;
+				if (enableTrace) timeoutMS = 3000;
+				slideShow = new SxSlideShow(enableTrace);	
+			}
+			
+			private function initApplication():void 
+			{
+				var mN:String = cN + ".initApplication ";
+				
+				slideShow.start(advanceItem, initialDelayMS, timeoutMS);
+				
+				var screenRect:Rectangle = systemManager.screen;
+				var dxScreen:int = screenRect.width;
+				var dyScreen:int = screenRect.height;						
+				
+				systemManager.addEventListener(ResizeEvent.RESIZE,systemEvent);
+				
+				main.addEventListener(MouseEvent.CLICK,mainClickEvent);
+				
+				left.addEventListener(MouseEvent.CLICK,leftClickEvent);
+				right.addEventListener(MouseEvent.CLICK,rightClickEvent);
+				
+				copyright.setStyle("paddingTop",20);
+				
+				eye.addEventListener(MouseEvent.CLICK,eyeEvent);
+				bio.addEventListener(MouseEvent.CLICK,bioEvent); // menu item
+				offerings.addEventListener(MouseEvent.CLICK,offeringsEvent);
+				
+				
+				labelArray = new Vector.<FeedLabel>();
+				var l:FeedLabel;
+				var feed:MRSSFeed;
+				feedArray = new Vector.<MRSSFeed>();
+				
+				var name:String = "architecture";
+				feed = getOneFeed(name,"assets/images/architecture.xml");					
+				prepareOneLabel(architecture,feed,name);					
+				feed.label = architecture;
+				
+				name = "art";
+				feed = getOneFeed(name,"assets/images/art.xml");					
+				prepareOneLabel(art,feed,name);					
+				feed.label = art;
+				
+				name = "flowers";
+				feed = getOneFeed(name,"assets/images/flowers.xml");					
+				prepareOneLabel(flowers,feed,name);					
+				feed.label = flowers; 
+				
+				name = "gardens";
+				feed = getOneFeed(name,"assets/images/gardens.xml");					
+				prepareOneLabel(gardens,feed,name);					
+				feed.label = gardens;
+				
+				name = "interiors";
+				feed = getOneFeed(name,"assets/images/interiors.xml");					
+				prepareOneLabel(interiors,feed,name);
+				feed.label = interiors;
+				
+				name = "landscapes";
+				feed = getOneFeed(name,"assets/images/landscapes.xml");					
+				prepareOneLabel(landscapes,feed,name);
+				feed.label = landscapes;
+				
+				eyeScroller = new SxScroller();
+				eyeScroller.x = 30;
+				var eyeRichText:RichEditableText = eyeScroller.richText;
+				eyeRichText.width = dxScreen * .85;
+				var eyeText:String = "<div fontSize=\"20\">"; 
+				
+				eyeText += "<p><span>The Integral Eye: Contemplative Photography</span></p>";
+				eyeText += "<p><span>Creating Beauty in Our Inner and Outer Lives</span></p>";
+				eyeText += "<p><span>Creative expression through photography can bring joy, connection and new perspectives into our lives. As we are faced with the challenges of systems and a planet under threat, the urgency of appreciating, connecting with, and sharing the natural world and deepening our inner lives and those of our communities is of profound importance.</span></p>";
+				eyeText += "<p><span>The Integral Eye provides the opportunity to deepen our connection to the natural world, to evolve our spiritual lives and to learn photography in an integrally informed process. We will use photography as a means for investigating our inner and outer lives, not only personally but also in community.</span></p>";
+				eyeText += "<p><span>Through photography, discussion, meditation and movement, we will explore meaning, creativity, spirituality and what it means to connect with the more than human world. Photographic techniques including composition and depth of field will be discussed, as well as awareness and perception. We will also have the opportunity to have our work examined with useful feedback provided.</span></p>";
+				eyeText += "<p><span>We offer:</span></p>";
+				eyeText += "<p><span>Individual consultation/mentoring</span></p>";
+				eyeText += "<p><span>      Photographic techniques</span></p>";
+				eyeText += "<p><span>      Advice on understanding and purchasing equipment</span></p>";
+				eyeText += "<p><span>      Information on selling, exhibiting and publishing your work  </span></p>";
+				eyeText += "<p><span>Workshops</span></p>";
+				eyeText += "<p><span>      Exploring creativity in a community setting</span></p>";
+				eyeText += "<p><span>Understanding photographic techniques and marketing your work</span></p>";
+				eyeText += "<p><span>      Exploring spirituality in the creative process</span></p>";
+				eyeText += "<p><span>      Seeing the extraordinary in that which is perceived as ordinary</span></p>";
+				eyeText += "<p><span>Tours</span></p>";
+				eyeText += "<p><span>      Traveling to some of the Earth?s most extraordinary and sacred sites</span></p>";
+				eyeText += "<p><span>      Seeing the extraordinary in that which is perceived as ordinary</span></p>";
+				eyeText += "<p><span>      Exploring creativity/spirituality in community</span></p>";
+				eyeText += "<p><span>Kate Zari Roberts is an award winning landscape photographer and contemplative whose work has been published in books and magazines worldwide. She has exhibited her work in museums and galleries on three continents and has had a lifelong interest in spirituality and connecting with the natural world.</span></p>";
+				eyeText += "<p><span>Join us for this exciting, co-creative journey into the unknown?the far reaches of our hearts and minds, our souls and spirits, and our creativity. Connect deeply with our planet and each other and explore what it means to live within our larger body, the Earth.</span></p>";
+				eyeText += "</div>";
+				eyeRichText.textFlow = TextFlowUtil.importFromString(eyeText, WhiteSpaceCollapse.PRESERVE);
+				
+				
+				bioScroller = new SxScroller();
+				bioScroller.x = 30;
+				var bioRichText:RichEditableText = bioScroller.richText;
+				bioRichText.width = dxScreen * .85;
+				var bioText:String = "<div fontSize=\"20\">"; 
+				
+				bioText += "<p><span>Kate Zari Roberts has been working as a professional photographer since 1981.</span></p>";
+				bioText += "<p><span>Her work has been published in books and magazines worldwide and she has won numerous awards including the prestigious Photographer of the Year Award from The American Institute of Architects.</span></p>";
+				bioText += "<p><span>Kate has received awards for her fine art  including awards from Patterson Simms, curator of The Whitney Museum of American Art, New York, and Dr. Dennis Barrie, Curator of Contemporary Art, Cincinnati Museum of Art.</span></p>";
+				bioText += "<p><span>Her work won an award from Photographer's Forum Magazine and from The National Print Competition whose jurors included Bob Ciani, Art Director of Life Magazine, Owen Edwards, editor of American Photographer Magazine and Jim Hughes, editor of Camera Arts Magazine.</span></p>";
+				bioText += "<p><span>Kate has been a member of The American Society of Magazine Photographers, Professional Photographers of South Africa and The Royal Photographic Society.</span></p>";
+				bioText += "<p><span>She was represented by The Garden Photo Library in London, England for more than 20 years.</span></p>";
+				bioText += "<p><span>Ordering Prints and Scheduling Classes</span></p>";
+				bioText += "<p><span>Kate sells her work directly.  She also teaches contemplative photography and awareness practice through The Integral Eye. Kate offers one on one mentoring, workshops and tours. If interested, please email kate@theintegraleye.com</span></p>";
+				bioText += "<p><span>To order prints or buy use rights to any of the photos on this site, please email kate@theintegraleye.com</span></p>";
+				bioText += "<p></p>";
+				bioText += "<p><span>AWARDS AND EXHIBITIONS</span></p>";
+				bioText += "<p><span>2008 Invited to exhibit at Mercury Gallery, Boulder, CO</span></p>";
+				bioText += "<p><span>2007 Invited to exhibit at Naropa University, Boulder, CO</span></p>";
+				bioText += "<p><span>2006 Exhibition at Miami Center for Photographic Art</span></p>";
+				bioText += "<p><span>2004 Work included in worldwide competition for professional landscape photographers. Exhibition held at Kew Gardens, London, England.</span></p>";
+				bioText += "<p><span>1995 Interviewed on Woman Today national radio show in South Africa.</span></p>";
+				bioText += "<p><span>1994 Featured photographer in South African Professional Photographer's Magazine</span></p>";
+				bioText += "<p><span>1991 40TH Annual All Florida Show Won photography award from juror Dr. Dennis Barrie, Curator of Contemporary Art, Cincinnati, Ohio. Shown at the Boca Raton Museum of Art, Florida.</span></p>";
+				bioText += "<p><span>1988 Exhibition at The Alpha Gallery, Dorset, England</span></p>";
+				bioText += "<p><span>1987 Photographer of the Year award from the American Institute of Architects, Florida Chapter.</span></p>";
+				bioText += "<p><span>1987 Photowork/87 Won award from juror Bruce Barnbaum, nationally known architectural photographer. Shown at The New Gallery, University of Miami.</span></p>";
+				bioText += "<p><span>1986 Exhibition at Virginia Miller Gallery, Miami, Florida.</span></p>";
+				bioText += "<p><span>1985 Photowork/85 Juror Cole Weston. Shown at the New Gallery, University of Miami.</span></p>";
+				bioText += "<p><span>1985 PBS Fine Art Exhibition. Won award from E.John Bullard, Director New Orleans Museum of Art. Shown at the Metropolitan Museum, Miami, Florida.</span></p>";
+				bioText += "<p><span>1985 Won award from Photographers Forum Magazine in a world wide competition. Jurors included Charles Desmaris, Director of the Los Angeles Museum of Photography and Jeff Weiss, Instructor of Photography, UCLA.</span></p>";
+				bioText += "<p><span>1985 Work included in Cuban Architects: Their Impact on the Urban Landscape of Miami.	Shown at The Cuban Museum, Miami.</span></p>";
+				bioText += "<p><span>1984 The National Print Competition. Jurors: Bob Ciani, Art Director,Life Magazine, Owen Edwards, editor, American Photographer Magazine, Jim Hughs, editor, Camera Arts Magazine, David Godine, Publisher.</span></p>";
+				bioText += "<p><span>1982 Won award from Patterson Sims, Director of the Whitney Museum of American Art, New York.</span></p>";
+				bioText += "<p><span>1981 PBS Fine Art Exhibition. Jurors: Director of Fine Art, Smithsonian Institution, Washington DC, and the Director of Fine Art, Corcoran Gallery, Washington, DC.</span></p>";
+				bioText += "<p></p>";
+				bioText += "<p><span>PUBLICATIONS (an abbreviated list)</span></p>";
+				bioText += "<p><span>Florida Architect (USA)</span></p>";
+				bioText += "<p><span>Interior Design (USA)</span></p>";
+				bioText += "<p><span>Inspiration ( World trade publication for store design, Switzerland)</span></p>";
+				bioText += "<p><span>Cultivated Pleasures (Viking/Penguin, USA)</span></p>";
+				bioText += "<p><span>Garden Style Sourcebook (Quarto Books, UK)</span></p>";
+				bioText += "<p><span>City Gardens (Simon & Schuster,USA)</span></p>";
+				bioText += "<p><span>House & Garden ( Conde Nast USA)</span></p>";
+				bioText += "<p><span>Country Life (UK)</span></p>";
+				bioText += "<p><span>House & Leisure (South Africa, every issue for two years)</span></p>";
+				bioText += "<p><span>Fair Lady (South Africa)</span></p>";
+				bioText += "<p><span>Complete Gardens of Southern Africa ( Struik Publishers, South Africa)</span></p>";
+				bioText += "<p><span>The Complete Book of Gardening (Struik, South Africa)</span></p>";
+				bioText += "<p><span>South Florida Home & Garden (USA)</span></p>";
+				bioText += "<p><span>Terrance Conran Books (UK)</span></p>";
+				bioText += "<p><span>Garden Design (Official publication of ASLA, USA)</span></p>";
+				bioText += "<p><span>ProPhoto (professional photographers magazine, South Africa)</span></p>";
+				bioText += "</div>";
+				bioRichText.textFlow = TextFlowUtil.importFromString(bioText, WhiteSpaceCollapse.PRESERVE);
+
+				
+				offeringsScroller = new SxScroller();
+				offeringsScroller.x = 30;
+				var offeringsRichText:RichEditableText = offeringsScroller.richText;
+				offeringsRichText.width = dxScreen * .85;
+				var offeringsText:String = "<div fontSize=\"20\">"; 
+					offeringsText += "<p><span>Prints of any image may be ordered by either email or phone.</span></p>";
+					offeringsText += "<p><span>Use rights for any image made be purchased by email or phone.</span></p>";
+					offeringsText += "<p><span>Mentoring and or workshops for contemplative photography may be scheduled by email or phone.</span></p>";
+					offeringsText += "<p><span></span></p>";
+					offeringsText += "<p><span>kate@theintegraleye.com</span></p>";
+					offeringsText += "<p><span>303-808-2388</span></p>";
+				offeringsText += "</div>";
+				offeringsRichText.textFlow = TextFlowUtil.importFromString(offeringsText, WhiteSpaceCollapse.PRESERVE);				
+				
+				resizeContent();
+			}
+			
+			private function systemEvent(event:Event):void {
+				var mN:String = cN + ".systemEvent " + event.type + " ";
+				if (enableTrace) trace (mN);
+				if (enableTrace) trace ("screen: " + systemManager.screen.width + " " + systemManager.screen.height);
+				resizeContent();
+			}
+			
+			private function resizeContent():void {
+				if (enableTrace) trace ("screen: " + systemManager.screen.width + " " + systemManager.screen.height);
+				
+				var screenRect:Rectangle = systemManager.screen;				
+				var dxScreen:int = screenRect.width;
+				var dyScreen:int = screenRect.height;						
+				footer.y = .90 * dyScreen;
+				
+				widthMain = .95 * dxScreen;
+				heightMain = footer.y - main.y;
+				
+				if (enableTrace) trace("main: " + widthMain + " " + heightMain);
+				
+				main.width = widthMain;
+				main.height = heightMain;
+				
+				eyeScroller.width = widthMain;
+				bioScroller.width = widthMain;
+				
+				if (image) loadImage(itemSelected);  // must reload image to let it scale to its parent					
+			}
+			
+			private function getOneFeed(name:String, url:String):MRSSFeed {
+				var mN:String = cN + ".getOneFeed " + url;
+				var feed:MRSSFeed = new MRSSFeed(name,url);
+				feedArray.push(feed);
+				feed.addEventListener(FaultEvent.FAULT,feedFaultEvent);
+				feed.addEventListener(ResultEvent.RESULT,feedLoadEvent);
+				feed.load();
+				return feed;
+			}
+			
+			private function feedFaultEvent(event:Event):void {
+				var feed:MRSSFeed = event.target as MRSSFeed;
+				var mN:String = cN + ".feedFaultEvent " + event.type + " " + feed.toString();
+				if (enableTrace) trace(mN);
+			}
+			
+			
+			private function feedLoadEvent(event:ResultEvent):void {
+				var mN:String = cN + ".feedLoadEvent " + event.type;
+				//					if (enableTrace) trace(mN);
+				for each (var feed:MRSSFeed in feedArray) {
+					if ( !feed.loaded ) return;
+				}
+				loadFirst();
+			}
+			
+			private function loadFirst():void {
+				var mN:String = cN + ".loadFirst ";
+				var target:FeedLabel = art; 
+				if (enableTrace) trace(mN + target.toString());
+				enableAllBut(target);
+				selectFeed(target);
+			}
+			
+			private function prepareOneLabel(l:FeedLabel,feed:MRSSFeed,name:String):void {
+				feedArray.push(feed);
+				l.feed = feed;
+				labelArray.push(l);
+				l.toolTip = "Click to select or advance images";
+				l.addEventListener(MouseEvent.CLICK,labelEvent);
+			}
+			
+			private function eyeEvent(event:Event):void {
+				var mN:String = cN + ".eyeEvent " + event.type;
+				if (enableTrace) trace(mN);
+				slideShow.stop();
+				removeMainElements();
+				main.addElement(eyeScroller);
+				inText = true;
+				state = "eye";
+			}
+			
+			private function bioEvent(event:Event):void {
+				var mN:String = cN + ".bioEvent " + event.type;
+				if (enableTrace) trace(mN);
+				slideShow.stop();
+				removeMainElements();
+				main.addElement(bioScroller);					
+				inText = true;
+				state = "bio";
+			}
+			
+			private function offeringsEvent(event:Event):void {
+				var mN:String = cN + ".offeringsEvent " + event.type;
+				if (enableTrace) trace(mN);
+				slideShow.stop();
+				removeMainElements();
+				main.addElement(offeringsScroller);					
+				inText = true;
+				inOfferings = true;
+				state = "offerings";					
+			}
+			
+			private function removeMainElements():void {
+				try {
+					main.removeElement(eyeScroller);
+				} catch (err:ArgumentError) {;}
+				try {
+					main.removeElement(bioScroller);
+				} catch (err:ArgumentError) {;}
+				try {
+					main.removeElement(offeringsScroller);
+				} catch (err:ArgumentError) {;}
+				try {
+					main.removeElement(image);
+				} catch (err:ArgumentError) {;}
+				inOfferings = false;					
+			}
+			
+			
+			private var imageLoadStart:int; // for timing the image loading
+			
+			private function loadImage(item:MRSSItem):void {
+				var mN:String = "      " + cN + ".loadImage ";
+				if (enableTrace) trace(mN + (item ? item.url : "no item") );
+				if (!item) return;
+				
+				if (inText) {
+					removeMainElements();
+					inText = false;
+				}
+				
+				imageNew = new SxImage();
+				imageNew.alpha = 1.0;
+				imageNew.width = widthMain;
+				imageNew.height = heightMain;
+				imageNew.toolTip = item.url;
+				imageNew.addEventListener(IOErrorEvent.IO_ERROR,imageErrorEvent);
+				imageNew.addEventListener(FlexEvent.UPDATE_COMPLETE,imageUpdateEvent);
+				imageNew.addEventListener(MouseEvent.CLICK,imageClickEvent);
+				
+				imageNew.source = item.url; // causes load
+				
+				if (image) {
+					try {
+						main.removeElement(image);
+					} catch (err:ArgumentError) {;}
+					image = null;
+				}
+				image = imageNew;
+				imageNew = null;
+				main.addElement(image);
+				if (enableTrace)					
+					imageLoadStart = utility.getNow(); 
+			}
+			
+			private function imageUpdateEvent(event:Event):void {
+				if (enableTrace)
+					var delta:int = utility.getNow() - imageLoadStart;
+				var mN:String = cN + ".imageUpdateEvent " + event.type + " " + delta + "ms ";
+				
+				var image:SxImage = event.target as SxImage;
+				//					if (image) {
+				//						if (enableTrace) trace(mN + "bytesLoaded: " + image.loaderInfo.bytesLoaded); // + "/" + image.loaderInfo.bytesTotal);
+				//					}
+				//					else { 
+				//						if (enableTrace) trace(mN);
+				//				    }
+			}
+			
+			private function imageErrorEvent(event:Event):void {
+				var mN:String = cN + ".imageErrorEvent " + event.type;
+				var image:SxImage = event.target as SxImage;
+				
+				if (enableTrace) trace(mN + image.source);
+			}
+			
+			private function advanceItem():void {
+				var mN:String = "   " + cN + ".advanceItem ";
+				if (feedSelected) {
+					if (feedSelected.lastItem()) {
+						feedSelected = MRSSFeed.getNextFeed();				
+						trace(mN + feedSelected.toStringShort());
+						enableAllBut(feedSelected.label);
+					}
+					nextEvent();
+				}
+			}				
+			
+			private function nextEvent():void {
+				//					var mN:String = "   " + cN + ".nextEvent ";
+				state = "images";
+				if (feedSelected && image) {
+					itemSelected = feedSelected.getNextItem();
+					loadImage(itemSelected);
+				}
+			}				
+			
+			private function previousEvent():void {
+				//					var mN:String = "   " + cN + ".previousEvent ";
+				state = "images";					
+				if (feedSelected && image) {
+					itemSelected = feedSelected.getPreviousItem();
+					loadImage(itemSelected);
+				}
+			}				
+			
+			private function leftClickEvent(event:MouseEvent):void {
+				var mN:String = cN + ".leftClickEvent " + event.type + " ";
+				slideShow.start(advanceItem, initialDelayMS, timeoutMS);
+				if (enableTrace) trace(mN);
+				previousEvent();
+			}				
+			private function rightClickEvent(event:MouseEvent):void {
+				var mN:String = cN + ".rightClickEvent " + event.type + " ";
+				if (enableTrace) trace(mN);
+				slideShow.start(advanceItem, initialDelayMS, timeoutMS);
+				nextEvent();					
+			}				
+			
+			private function mainClickEvent(event:MouseEvent):void {
+				var mN:String = cN + ".mainClickEvent " + event.type + " "; // + event.localX + "/" + main.width + " ";
+				if (inOfferings || inText){ 
+					if (enableTrace) trace(mN + "inText");
+					return;
+				}
+				if (event.localX < main.width/2) {
+					if (enableTrace) trace(mN + "previous");
+					previousEvent();
+				}
+				else {
+					if (enableTrace) trace(mN + "next");
+					nextEvent();
+				}
+			}				
+			
+			private function imageClickEvent(event:MouseEvent):void {
+				var mN:String = cN + ".imageClickEvent " + event.type + " ";
+				slideShow.start(advanceItem, initialDelayMS, timeoutMS);
+				if (enableTrace) trace(mN);
+			}				
+			
+			private function labelEvent(event:MouseEvent):void {
+				var mN:String = cN + ".labelEvent " + event.type + " ";
+				state = "images";
+				slideShow.start(advanceItem, initialDelayMS, timeoutMS);
+				//					if (enableTrace) trace(mN);
+				
+				if (inText) {
+					removeMainElements();
+					inText = false;
+					main.addElement(image);
+				}
+				
+				var target:FeedLabel = event.target as FeedLabel;
+				if (target) {
+					enableAllBut(target);
+					selectFeed(target);
+				}
+			}
+			
+			private function selectFeed(target:FeedLabel):void {
+				var mN:String = cN + ".selectFeed ";
+				var feed:MRSSFeed = target.feed;
+				var item:MRSSItem;
+				
+				if (feed == feedSelected) {
+					item = feed.getNextItem();
+				}
+				else {
+					feedSelected = feed;
+					item = feed.getSelectedItem();
+				}
+				
+				//					if (enableTrace) trace(mN + item);
+				loadImage(item);
+			}
+			
+			private var selectedLabel:FeedLabel;
+			private function enableAllBut(target:FeedLabel):void {
+				selectedLabel = target;
+				var l:FeedLabel;
+				for each (l in labelArray) {
+					if (l == target) 
+						l.setStyle("color",disabledColor);
+					else 
+						l.setStyle("color",enabledColor);
+				}
+			}
+			
+			public function getClass(o:Object):String {
+				var classInfo:XML = describeType(o);
+				var className:String = classInfo.@name.toString();
+				var r:RegExp = /[\.A-Za-z0-9]*::/;  // replace the leading part of the fully-qualified name, retaining only the last portion
+				className = className.replace(r,"");
+				return className + " ";
+			}				
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer id="borderContainer" x="0" y="20" width="100%" height="100%"
+					   backgroundColor="0x000000" borderVisible="false">
+		
+		<s:BorderContainer id="toplineBorderContainer" y="40" width="95%" height="42"
+						   backgroundColor="0x00000f" borderVisible="false" color="0xa0a0a0">
+			<s:layout>
+				<s:HorizontalLayout gap="30"/>			
+			</s:layout>
+			
+			<s:BorderContainer id="headingBorderContainer" width="30%" height="40"
+							   backgroundColor="0x00000f" borderVisible="false" color="0xa0a0a0">
+				<s:layout>
+					<s:HorizontalLayout gap="10" horizontalAlign="left" paddingBottom="0"
+										paddingLeft="0" paddingRight="0" paddingTop="0"
+										verticalAlign="bottom"/>			
+				</s:layout>
+				<s:Label id="kate" width="100%" height="100%">Kate Zari Roberts   303.808.2388    kate@TheIntegralEye.com</s:Label>				
+				
+			</s:BorderContainer>
+			
+			<s:BorderContainer id="menuBorderContainer" width="70%" height="40"
+							   backgroundColor="0x00000f" borderVisible="false" color="0xa0a0a0">
+				<s:layout>
+					<s:HorizontalLayout gap="10" horizontalAlign="left" paddingBottom="0"
+										paddingLeft="0" paddingRight="0" paddingTop="0"
+										verticalAlign="bottom"/>			
+				</s:layout>
+				
+				<s:BorderContainer id="menuBorderContainer1" width="70%" height="40"
+								   backgroundColor="0x00000f" borderVisible="false"
+								   color="0xa0a0a0">
+					<s:layout>
+						<s:HorizontalLayout gap="10" horizontalAlign="left" paddingBottom="0"
+											paddingLeft="0" paddingRight="0" paddingTop="0"
+											verticalAlign="bottom"/>			
+					</s:layout>
+					
+					<com.fourdtext:FeedLabel id="architecture" width="70" height="40">Architecture</com.fourdtext:FeedLabel>
+					<com.fourdtext:FeedLabel id="art" width="50" height="40">Fine Art</com.fourdtext:FeedLabel>				
+					<com.fourdtext:FeedLabel id="flowers" width="45" height="40">Flowers</com.fourdtext:FeedLabel>				
+					<com.fourdtext:FeedLabel id="gardens" width="50" height="40">Gardens</com.fourdtext:FeedLabel>				
+					<com.fourdtext:FeedLabel id="interiors" width="50" height="40">Interiors</com.fourdtext:FeedLabel>				
+					<com.fourdtext:FeedLabel id="landscapes" width="100" height="40">Landscapes</com.fourdtext:FeedLabel>				
+				</s:BorderContainer>						
+				
+				<s:BorderContainer id="menuBorderContainer2" width="70%" height="40"
+								   backgroundColor="0x00000f" borderVisible="false"
+								   color="0xa0a0a0">
+					<s:layout>
+						<s:HorizontalLayout gap="10" horizontalAlign="left" paddingBottom="0"
+											paddingLeft="0" paddingRight="0" paddingTop="0"
+											verticalAlign="bottom"/>			
+					</s:layout>
+					
+					<s:Label id="eye" height="40" color="0xc0c0c0">The Integral Eye</s:Label>				
+					<s:Label id="bio" height="40" color="0xc0c0c0">Bio</s:Label>				
+					<s:Label id="offerings" height="40" color="0xc0c0c0">Our Offerings</s:Label>				
+					
+				</s:BorderContainer>							
+			</s:BorderContainer>
+			
+		</s:BorderContainer>
+		
+		<s:BorderContainer id="redline" y="60" width="95%" height="3" backgroundColor="0x800000"
+						   borderColor="0x800000">
+			
+		</s:BorderContainer>
+		
+		
+		<s:BorderContainer id="main" y="120" backgroundColor="0x000000" borderColor="0x008000"
+						   borderVisible="false" color="0xa0a0a0">
+			
+		</s:BorderContainer> 
+		
+		<s:BorderContainer id="footer" y="700" width="95%" height="40" backgroundColor="0x000000"
+						   borderColor="0x008000" borderVisible="false">
+			<s:layout>
+				<s:HorizontalLayout gap="300" horizontalAlign="left" paddingBottom="0"
+									paddingLeft="0" paddingRight="0" paddingTop="0"
+									verticalAlign="bottom"/>			
+			</s:layout>
+			
+			<s:Image id="left" source="assets/icons/leftArrow zippy 40.png"/>
+			
+			<s:Label id="copyright" width="90%" height="40" color="0xa0a0a0">Copyright Kate Zari Roberts 2011 (110726.1) Website design by 4Dtext.com</s:Label>				
+			
+			<s:Image id="right" source="assets/icons/rightArrow zippy 40.png"/>
+			
+		</s:BorderContainer> 
+		
+	</s:BorderContainer>
+	
+</s:Application>
